@@ -1,0 +1,13 @@
+## Interface: 16001
+## Title: Azeroth Graphics
+## Notes: Sliders and checkboxes for hidden graphics settings (grass, view distance, sharpness, water, weather, death screen), with separate settings for dungeons, raids and battlegrounds. Type /agfx to open.
+## Notes-frFR: Curseurs et cases à cocher pour des réglages graphiques cachés (herbe, distance d'affichage, netteté, eau, météo, écran de mort), avec des réglages séparés pour les donjons, les raids et les champs de bataille. Tapez /agfx pour ouvrir.
+## Notes-esES: Controles y casillas para ajustes gráficos ocultos (hierba, distancia de visión, nitidez, agua, clima, pantalla de muerte), con ajustes separados para mazmorras, bandas y campos de batalla. Escribe /agfx para abrir.
+## Notes-esMX: Controles y casillas para ajustes gráficos ocultos (hierba, distancia de visión, nitidez, agua, clima, pantalla de muerte), con ajustes separados para mazmorras, bandas y campos de batalla. Escribe /agfx para abrir.
+## Version: 2.0.0
+## SavedVariables: AzerothGraphicsDB
+## IconTexture: Interface\AddOns\AzerothGraphics\Media\Icon
+## AddonCompartmentFunc: AzerothGraphics_OnAddonCompartmentClick
+
+Locales.lua
+AzerothGraphics.lua
