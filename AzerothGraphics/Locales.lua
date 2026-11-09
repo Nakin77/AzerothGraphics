@@ -18,7 +18,7 @@ local L = {
     OBJECT_DISTANCE = "Object distance",
     OBJECT_DISTANCE_DESC = "How far scenery (trees, rocks, buildings) stays visible, as a percentage. Higher = visible farther away.",
     SMALL_OBJECTS = "Small distant objects",
-    SMALL_OBJECTS_DESC = "Far away, objects smaller than this size are hidden. Lower = more small objects visible in the distance.",
+    SMALL_OBJECTS_DESC = "Far away, objects smaller than this size are hidden. Lower = more small objects visible in the distance. The slider is reversed: to the right = more objects.",
 
     HEADER_IMAGE = "Image and effects",
     SHARPEN = "Always sharpen",
@@ -91,7 +91,7 @@ TRANSLATIONS.frFR = {
     OBJECT_DISTANCE = "Distance des objets",
     OBJECT_DISTANCE_DESC = "Jusqu'à quelle distance les éléments du décor (arbres, rochers, bâtiments) restent visibles, en pourcentage. Plus haut = visibles plus loin.",
     SMALL_OBJECTS = "Petits objets lointains",
-    SMALL_OBJECTS_DESC = "Au loin, les objets plus petits que cette taille sont cachés. Plus bas = plus de petits objets visibles au loin.",
+    SMALL_OBJECTS_DESC = "Au loin, les objets plus petits que cette taille sont cachés. Plus bas = plus de petits objets visibles au loin. Le curseur est inversé : vers la droite = plus d'objets.",
 
     HEADER_IMAGE = "Image et effets",
     SHARPEN = "Netteté toujours active",
@@ -157,7 +157,7 @@ TRANSLATIONS.esES = {
     OBJECT_DISTANCE = "Distancia de objetos",
     OBJECT_DISTANCE_DESC = "Hasta qué distancia los elementos del escenario (árboles, rocas, edificios) siguen visibles, en porcentaje. Más alto = visibles más lejos.",
     SMALL_OBJECTS = "Objetos pequeños lejanos",
-    SMALL_OBJECTS_DESC = "A lo lejos, los objetos más pequeños que este tamaño se ocultan. Más bajo = más objetos pequeños visibles a lo lejos.",
+    SMALL_OBJECTS_DESC = "A lo lejos, los objetos más pequeños que este tamaño se ocultan. Más bajo = más objetos pequeños visibles a lo lejos. El control está invertido: a la derecha = más objetos.",
 
     HEADER_IMAGE = "Imagen y efectos",
     SHARPEN = "Nitidez siempre activa",

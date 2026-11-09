@@ -10,7 +10,8 @@ local CVarDefault = (C_CVar and C_CVar.GetCVarDefault) or GetCVarDefault
 
 -- Each entry: the CVar, how it is shown, and the value restored by the default button.
 -- Entries without a default use the game's own default for that CVar.
--- "Set all to maximum" moves sliders to max, or to best when max shows less.
+-- "Set all to maximum" moves sliders to their most detailed end. Inverted sliders
+-- (where a lower value shows more) are drawn reversed, so that end is always on the right.
 -- Header entries start a new section.
 local SETTINGS = {
     { header = L.HEADER_GROUND },
@@ -37,7 +38,7 @@ local SETTINGS = {
         label = L.OBJECT_DISTANCE, desc = L.OBJECT_DISTANCE_DESC,
     },
     {
-        cvar = "lodObjectCullSize", kind = "slider", min = 0, max = 50, step = 1, best = 0,
+        cvar = "lodObjectCullSize", kind = "slider", min = 0, max = 50, step = 1, invert = true,
         label = L.SMALL_OBJECTS, desc = L.SMALL_OBJECTS_DESC,
     },
 
@@ -216,7 +217,7 @@ end
 -- Checkboxes are preferences rather than quality levels, so they stay as they are.
 local function MaxAll(key)
     for _, s in ipairs(SETTINGS) do
-        if s.kind == "slider" and Exists(s) then SetValue(key, s, s.best or s.max) end
+        if s.kind == "slider" and Exists(s) then SetValue(key, s, s.invert and s.min or s.max) end
     end
     RefreshAll()
 end
@@ -406,7 +407,14 @@ local function CreateControls(parent, y)
                 thumbEdge:SetPoint("TOPLEFT", thumb, -1, 1)
                 thumbEdge:SetPoint("BOTTOMRIGHT", thumb, 1, -1)
 
+                -- Position on the slider of a CVar value, and the reverse.
+                local function ToSlider(v)
+                    if s.invert then return s.min + s.max - v end
+                    return v
+                end
+
                 local function UpdateFill(v)
+                    v = ToSlider(v)
                     local fraction = math.max(0, math.min(1, (v - s.min) / (s.max - s.min)))
                     fill:SetWidth(math.max(fraction * (SLIDER_W - 2), 1))
                     fill:SetShown(fraction > 0)
@@ -434,7 +442,7 @@ local function CreateControls(parent, y)
 
                 -- Applied shortly after the slider stops moving, not on every step of a drag.
                 slider:SetScript("OnValueChanged", function(_, v)
-                    v = Snap(s, v)
+                    v = Snap(s, ToSlider(v))
                     box:SetText(tostring(v))
                     UpdateFill(v)
                     if syncing then return end
@@ -455,11 +463,11 @@ local function CreateControls(parent, y)
 
                 function Display(v)
                     syncing = true
-                    slider:SetValue(v)
+                    slider:SetValue(ToSlider(v))
                     syncing = false
                     box:SetText(tostring(v))
                     -- OnValueChanged does not fire when the value stays the same.
-                    UpdateFill(slider:GetValue())
+                    UpdateFill(ToSlider(slider:GetValue()))
                 end
 
                 inputs = { slider, box }

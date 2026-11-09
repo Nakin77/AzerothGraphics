@@ -26,7 +26,7 @@ Azeroth Graphics gives you simple sliders and checkboxes for hidden graphics set
 | | Grass fade-in | Distance over which grass appears gradually instead of popping in | 0 – 500 |
 | View distance | Terrain detail | How far hills and mountains keep their full detail | 100 – 1000 |
 | | Object distance | How far trees, rocks and buildings stay visible, as a percentage | 0 – 300 |
-| | Small distant objects | Distant objects smaller than this size are hidden (lower shows more) | 0 – 50 |
+| | Small distant objects | Distant objects smaller than this size are hidden (lower shows more; the slider is reversed so right shows more) | 0 – 50 |
 | Image and effects | Always sharpen | Sharpens the image even when render scale is at 100% | On / Off |
 | | Water reflections | Quality of reflections on water | 0 – 3 |
 | | Weather | Strength of rain, snow and other weather effects | 0 – 3 |
@@ -68,4 +68,4 @@ Under the tabs, on the right, the window always shows which settings are applied
 
 ---
 
-**Version** 2.0.0 · **Game** WoW Forever (interface 16001) · **Languages** English, Français, Español
+**Version** 2.0.1 · **Game** WoW Forever (interface 16001) · **Languages** English, Français, Español
