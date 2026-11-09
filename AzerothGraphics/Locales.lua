@@ -74,9 +74,15 @@ local L = {
     RESET_DONE = "The Global tab settings have been reset to defaults.",
 }
 
-local TRANSLATIONS = {}
+-- Only the client's language is built: the other translations are skipped
+-- without ever creating their tables.
+local locale = GetLocale()
 
-TRANSLATIONS.frFR = {
+local function Translate(t)
+    for key, text in pairs(t) do L[key] = text end
+end
+
+if locale == "frFR" then Translate({
     HEADER_GROUND = "Herbe et végétation",
     GRASS_DENSITY = "Densité de l'herbe",
     GRASS_DENSITY_DESC = "Quantité d'herbe, de fleurs et de petits détails au sol. Plus haut = sol plus fourni, mais plus exigeant pour l'ordinateur.",
@@ -140,9 +146,9 @@ TRANSLATIONS.frFR = {
     SUBTITLE = "Les changements s'appliquent immédiatement et sont conservés d'une session à l'autre.",
     PANEL_HINT = "Tapez /agfx pour ouvrir ces réglages dans une fenêtre déplaçable.",
     RESET_DONE = "Les réglages de l'onglet Global ont été remis par défaut.",
-}
+})
 
-TRANSLATIONS.esES = {
+elseif locale == "esES" or locale == "esMX" then Translate({
     HEADER_GROUND = "Hierba y vegetación",
     GRASS_DENSITY = "Densidad de la hierba",
     GRASS_DENSITY_DESC = "Cantidad de hierba, flores y pequeños detalles en el suelo. Más alto = suelo más poblado, pero más exigente para tu equipo.",
@@ -206,12 +212,7 @@ TRANSLATIONS.esES = {
     SUBTITLE = "Los cambios se aplican al instante y se conservan entre sesiones.",
     PANEL_HINT = "Escribe /agfx para abrir estos ajustes en una ventana que se puede mover.",
     RESET_DONE = "Los ajustes de la pestaña Global se han restablecido.",
-}
-TRANSLATIONS.esMX = TRANSLATIONS.esES
-
-local translation = TRANSLATIONS[GetLocale()]
-if translation then
-    for key, text in pairs(translation) do L[key] = text end
+})
 end
 
 ns.L = L

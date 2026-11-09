@@ -8,6 +8,11 @@ local CVarGet = (C_CVar and C_CVar.GetCVar) or GetCVar
 local CVarSet = (C_CVar and C_CVar.SetCVar) or SetCVar
 local CVarDefault = (C_CVar and C_CVar.GetCVarDefault) or GetCVarDefault
 
+-- Globals used often, read once as locals (faster than a global lookup).
+local tonumber, tostring, ipairs, next = tonumber, tostring, ipairs, next
+local floor, max, min = math.floor, math.max, math.min
+local GetTime, After = GetTime, C_Timer.After
+
 -- Each entry: the CVar, how it is shown, and the value restored by the default button.
 -- Entries without a default use the game's own default for that CVar.
 -- "Set all to maximum" moves sliders to their most detailed end. Inverted sliders
@@ -73,6 +78,12 @@ local PROFILES = {
 local PROFILE = {}
 for _, p in ipairs(PROFILES) do PROFILE[p.key] = p end
 
+-- The settings that drive a CVar (headers left out), for the loops run on zone changes.
+local CVARS = {}
+for _, s in ipairs(SETTINGS) do
+    if s.cvar then CVARS[#CVARS + 1] = s end
+end
+
 -- AzerothGraphicsDB:
 --   profiles.global.values[cvar]  forced value; nil leaves the CVar to the game
 --   profiles.<type>.values[cvar]  value in that instance type; nil follows global
@@ -83,8 +94,17 @@ local db
 local context -- instance type of the current zone, when it has a configuration
 local instances = {} -- every built set of controls (floating window, options panel)
 
+-- A CVar the game knows stays known, so a "yes" is remembered and never asked again.
+local known = {}
+
 local function Exists(s)
-    return CVarGet(s.cvar) ~= nil
+    local cvar = s.cvar
+    if known[cvar] then return true end
+    if CVarGet(cvar) ~= nil then
+        known[cvar] = true
+        return true
+    end
+    return false
 end
 
 local function Default(s)
@@ -99,7 +119,7 @@ local function Current(s)
 end
 
 local function Snap(s, v)
-    return math.floor((v - s.min) / s.step + 0.5) * s.step + s.min
+    return floor((v - s.min) / s.step + 0.5) * s.step + s.min
 end
 
 local function InitDB()
@@ -151,29 +171,33 @@ local function Apply(s)
     if not Exists(s) then return end
     local cvar = s.cvar
     local global = db.profiles.global.values[cvar]
+    local current = Current(s) -- read once: the CVar does not change until it is set below
     local target = Override(s)
     if target ~= nil then
         if global == nil and db.baseline[cvar] == nil then
-            db.baseline[cvar] = Current(s)
+            db.baseline[cvar] = current
         end
     else
         target = global
         if target == nil then target = db.baseline[cvar] end
         db.baseline[cvar] = nil
     end
-    if target ~= nil and target ~= Current(s) then
+    if target ~= nil and target ~= current then
         CVarSet(cvar, tostring(target))
     end
 end
 
+-- Only the controls on screen are redrawn: hidden ones are filled again when
+-- they are shown (OnShow), so zone changes cost nothing while the UI is closed.
 local function RefreshAll()
-    for _, controls in ipairs(instances) do controls:Sync() end
+    for i = 1, #instances do
+        local controls = instances[i]
+        if controls.parent:IsVisible() then controls:Sync() end
+    end
 end
 
 local function ApplyAll()
-    for _, s in ipairs(SETTINGS) do
-        if s.cvar then Apply(s) end
-    end
+    for i = 1, #CVARS do Apply(CVARS[i]) end
     RefreshAll()
 end
 
@@ -207,8 +231,8 @@ local function SetValue(key, s, value)
 end
 
 local function ResetAll()
-    for _, s in ipairs(SETTINGS) do
-        if s.cvar and Exists(s) and Default(s) then SetValue("global", s, Default(s)) end
+    for _, s in ipairs(CVARS) do
+        if Exists(s) and Default(s) then SetValue("global", s, Default(s)) end
     end
     RefreshAll()
 end
@@ -216,7 +240,7 @@ end
 -- Moves every slider of a configuration to its most detailed value.
 -- Checkboxes are preferences rather than quality levels, so they stay as they are.
 local function MaxAll(key)
-    for _, s in ipairs(SETTINGS) do
+    for _, s in ipairs(CVARS) do
         if s.kind == "slider" and Exists(s) then SetValue(key, s, s.invert and s.min or s.max) end
     end
     RefreshAll()
@@ -273,7 +297,7 @@ local TAB_GAP = 4
 -- button inside parent, starting at y (offset from parent's top). Returns the
 -- controls and the y below the last widget.
 local function CreateControls(parent, y)
-    local controls = { key = "global", tabs = {}, rows = {} }
+    local controls = { key = "global", tabs = {}, rows = {}, parent = parent }
     local syncing = false
 
     -- Selected tab in white, enabled configurations in gold, disabled ones in grey.
@@ -415,8 +439,8 @@ local function CreateControls(parent, y)
 
                 local function UpdateFill(v)
                     v = ToSlider(v)
-                    local fraction = math.max(0, math.min(1, (v - s.min) / (s.max - s.min)))
-                    fill:SetWidth(math.max(fraction * (SLIDER_W - 2), 1))
+                    local fraction = max(0, min(1, (v - s.min) / (s.max - s.min)))
+                    fill:SetWidth(max(fraction * (SLIDER_W - 2), 1))
                     fill:SetShown(fraction > 0)
                 end
 
@@ -440,17 +464,33 @@ local function CreateControls(parent, y)
                 box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
                 box:SetScript("OnEditFocusLost", function() row:Refresh() end)
 
-                -- Applied shortly after the slider stops moving, not on every step of a drag.
+                -- Applied 0.15 s after the slider stops moving, not on every step of a drag.
+                -- A single reusable callback waits for the drag to settle, instead of
+                -- creating (then throwing away) a new timer object on every step.
+                local due, waiting
+                local function Settle()
+                    waiting = false
+                    local v = row.pending
+                    if v == nil then return end -- cancelled meanwhile
+                    local left = due - GetTime()
+                    if left > 0.01 then
+                        waiting = true
+                        After(left, Settle)
+                        return
+                    end
+                    row:Set(v)
+                end
+
                 slider:SetScript("OnValueChanged", function(_, v)
                     v = Snap(s, ToSlider(v))
                     box:SetText(tostring(v))
                     UpdateFill(v)
                     if syncing then return end
-                    if row.timer then row.timer:Cancel() end
-                    row.timer = C_Timer.NewTimer(0.15, function()
-                        row.timer = nil
-                        row:Set(v)
-                    end)
+                    row.pending, due = v, GetTime() + 0.15
+                    if not waiting then
+                        waiting = true
+                        After(0.15, Settle)
+                    end
                 end)
                 slider:SetScript("OnEnter", function(self)
                     thumb:SetVertexColor(1, 1, 1)
@@ -512,13 +552,13 @@ local function CreateControls(parent, y)
             reset:SetScript("OnLeave", HideTooltip)
 
             function row:Set(value)
-                if self.timer then self.timer:Cancel() self.timer = nil end
+                self.pending = nil
                 SetValue(controls.key, s, value)
                 RefreshAll()
             end
 
             function row:Refresh()
-                if self.timer then self.timer:Cancel() self.timer = nil end
+                self.pending = nil
                 local key = controls.key
                 local available = Exists(s)
                 local def = Default(s)
@@ -659,19 +699,24 @@ function AzerothGraphics_OnAddonCompartmentClick()
     ToggleWindow()
 end
 
--- Same controls in Esc > Options > AddOns.
+-- Same controls in Esc > Options > AddOns. Only an empty frame is registered at
+-- login: its content is built the first time it is opened, so players who never
+-- open it pay nothing in memory or load time.
 local panel = CreateFrame("Frame")
 panel.name = TITLE
+panel:SetScript("OnShow", function(self)
+    local panelTitle = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    panelTitle:SetPoint("TOPLEFT", 16, -16)
+    panelTitle:SetText(TITLE)
 
-local panelTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-panelTitle:SetPoint("TOPLEFT", 16, -16)
-panelTitle:SetText(TITLE)
+    local panelSub = self:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    panelSub:SetPoint("BOTTOMLEFT", panelTitle, "BOTTOMRIGHT", 12, 1)
+    panelSub:SetText(L.PANEL_HINT)
 
-local panelSub = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-panelSub:SetPoint("BOTTOMLEFT", panelTitle, "BOTTOMRIGHT", 12, 1)
-panelSub:SetText(L.PANEL_HINT)
-
-CreateControls(panel, -44)
+    -- Replaces this OnShow with the one of the controls, then runs it for this first opening.
+    CreateControls(self, -44)
+    self:GetScript("OnShow")(self)
+end)
 -- A frame created without a parent starts out shown, so the options window
 -- would display it without ever firing OnShow (and without filling the values).
 panel:Hide()
@@ -694,21 +739,23 @@ SlashCmdList.AZEROTHGRAPHICS = function(msg)
     end
 end
 
-local events = CreateFrame("Frame")
-events:RegisterEvent("ADDON_LOADED")
-events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-events:SetScript("OnEvent", function(self, event, name)
-    if event == "ADDON_LOADED" then
-        if name == ADDON_NAME then
-            InitDB()
-            self:UnregisterEvent("ADDON_LOADED")
-        end
-        return
-    end
-    -- Switches configuration when entering or leaving an instance, and puts
-    -- back the chosen values that graphics presets may have overwritten.
+-- Switches configuration when entering or leaving an instance, and puts
+-- back the chosen values that graphics presets may have overwritten.
+local function OnZone()
     local _, instanceType = IsInInstance()
     context = PROFILE[instanceType] and instanceType or nil
     ApplyAll()
+end
+
+-- Zone events are only listened to once the saved settings are loaded; from
+-- then on the handler goes straight to the zone code, with no event test.
+local events = CreateFrame("Frame")
+events:RegisterEvent("ADDON_LOADED")
+events:SetScript("OnEvent", function(self, _, name)
+    if name ~= ADDON_NAME then return end
+    InitDB()
+    self:UnregisterEvent("ADDON_LOADED")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    self:SetScript("OnEvent", OnZone)
 end)
