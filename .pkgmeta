@@ -4,5 +4,9 @@ package-as: AzerothGraphics
 move-folders:
   AzerothGraphics/AzerothGraphics: AzerothGraphics
 
+# Only what the game loads goes in the download: the logos and the README are
+# for the GitHub and CurseForge pages, the game uses Media/Icon.tga only.
 ignore:
   - README.md
+  - AzerothGraphics/README.md
+  - AzerothGraphics/Media/logo*

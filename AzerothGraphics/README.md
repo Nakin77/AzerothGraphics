@@ -15,6 +15,7 @@ Azeroth Graphics gives you simple sliders and checkboxes for hidden graphics set
 - **One-click buttons.** *Set all to maximum* for the most detailed picture, *Reset all to defaults* to go back to the game's values.
 - **Exact values.** Each slider has a box where you can type a value, even beyond the slider's range.
 - **English, French and Spanish.** The interface follows your game language.
+- **Featherweight.** Nothing runs while you play: the addon only wakes up when you change zone, and its windows are only built the first time you open them.
 - **Easy to reach.** Type `/agfx`, use the addon menu next to the minimap, or go to *Esc → Options → AddOns*.
 
 ## Settings
@@ -68,4 +69,4 @@ Under the tabs, on the right, the window always shows which settings are applied
 
 ---
 
-**Version** 2.0.1 · **Game** WoW Forever (interface 16001) · **Languages** English, Français, Español
+**Version** 2.0.2 · **Game** WoW Forever (interface 16001) · **Languages** English, Français, Español
