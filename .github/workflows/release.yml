@@ -1,0 +1,28 @@
+name: Package and upload to CurseForge
+
+# Runs when a version tag is pushed (for example v2.0.2), including a tag
+# created from the "Draft a new release" form on GitHub.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Package and upload
+        uses: BigWigsMods/packager@v2
+        with:
+          # CurseForge project ID, read from the CURSEFORGE_PROJECT_ID repository variable.
+          args: ${{ vars.CURSEFORGE_PROJECT_ID && format('-p {0}', vars.CURSEFORGE_PROJECT_ID) || '' }}

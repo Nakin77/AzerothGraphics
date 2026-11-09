@@ -1,0 +1,8 @@
+package-as: AzerothGraphics
+
+# The addon lives in the AzerothGraphics/ subfolder of the repository.
+move-folders:
+  AzerothGraphics/AzerothGraphics: AzerothGraphics
+
+ignore:
+  - README.md
